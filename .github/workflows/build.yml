@@ -13,7 +13,7 @@ jobs:
       - name: 删除旧的工作流运行记录
         uses: Mattraks/delete-workflow-runs@main
         with:
-          retain_days: 0       # 保留 0 天的记录
+          retain_days: 0      # 保留 0 天的记录
           keep_minimum_runs: 0 # 至少保留 0 次记录
 
   build:
@@ -111,7 +111,7 @@ jobs:
           path: ./kernel/linux-*.deb
 
       - name: 发布到 GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ matrix.arch }}-${{ env.KERNEL_VERSION }}
           files: ./kernel/linux-*.deb
