@@ -13,13 +13,12 @@ jobs:
       - name: 删除旧的工作流运行记录
         uses: Mattraks/delete-workflow-runs@main
         with:
-          retain_days: 0      # 保留 0 天的记录
-          keep_minimum_runs: 0 # 至少保留 1 次记录以供参考
+          retain_days: 0       # 保留 0 天的记录
+          keep_minimum_runs: 0 # 至少保留 0 次记录
 
   build:
     needs: cleanup
     strategy:
-      fail-fast: false
       matrix:
         include:
           - arch: x86_64
@@ -34,11 +33,9 @@ jobs:
       - name: 获取内核版本
         id: get_kernel_version
         run: |
-          # 从 kernel.org 获取最新的稳定版版本号
           version=$(curl -s https://www.kernel.org \
             | grep -A1 -m1 "stable:" \
             | grep -oP '\d+\.\d+\.\d+')
-          echo "获取到最新的稳定版内核版本: $version"
           echo "KERNEL_VERSION=$version" >> $GITHUB_ENV
 
       - name: 检出代码
@@ -60,32 +57,20 @@ jobs:
       - name: 下载内核源代码
         working-directory: ./kernel
         run: |
-          # 基于获取到的版本号，下载对应的稳定版分支
           branch=$(echo "${{ env.KERNEL_VERSION }}" | grep -oP '^\d+\.\d+')
-          echo "正在下载 linux-$branch.y 分支..."
           git clone --depth=1 --branch linux-$branch.y \
-            https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git linux
+            https://github.com/gregkh/linux.git linux
 
-      - name: 合并 Google BBRv3
+      - name: 添加 Google BBRv3
         working-directory: ./kernel/linux
         run: |
-          # 设置 Git 用户信息，合并时需要
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          
-          echo "正在添加 Google BBRv3 远程仓库..."
           git remote add google-bbr https://github.com/google/bbr.git
           git fetch google-bbr
-          
-          echo "正在尝试将 BBRv3 分支合并到当前内核..."
-          # 尝试合并 BBRv3 分支
-          git merge google-bbr/v3 --allow-unrelated-histories -m "Merge BBRv3 changes" || exit 1
-          echo "BBRv3 合并成功。"
+          git checkout google-bbr/v3
 
       - name: 更新 Makefile 中的版本号
         working-directory: ./kernel/linux
         run: |
-          echo "正在强制更新 Makefile 中的版本号为 ${{ env.KERNEL_VERSION }}"
           IFS='.' read -r v p s <<< "${{ env.KERNEL_VERSION }}"
           sed -i "s/^VERSION *=.*/VERSION = $v/" Makefile
           sed -i "s/^PATCHLEVEL *=.*/PATCHLEVEL = $p/" Makefile
@@ -123,11 +108,11 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: deb-${{ matrix.arch }}
-          path: ./kernel/*.deb # deb 包在上一级目录生成
+          path: ./kernel/linux-*.deb
 
       - name: 发布到 GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ matrix.arch }}-${{ env.KERNEL_VERSION }}
-          files: ./kernel/*.deb
+          files: ./kernel/linux-*.deb
           body: "带有 BBRv3 的最新内核，适用于 ${{ matrix.arch }} 架构"
