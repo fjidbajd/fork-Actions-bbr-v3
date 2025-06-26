@@ -135,7 +135,7 @@ install_latest_version() {
     CORE_LATEST_VERSION="${CORE_LATEST_VERSION#arm64-}"
 
     if [[ -n "$INSTALLED_VERSION" && "$INSTALLED_VERSION" == "$CORE_LATEST_VERSION"* ]]; then
-echo -e "\033[1;32m(o´▽`o) 您已安装最新版本，无需更新！\033[0m"
+echo -e "\033[1;32m(o´▽'o) 您已安装最新版本，无需更新！\033[0m"
         return 0
     fi
     # --- 修复结束 ---
