@@ -1,6 +1,7 @@
+cat << 'EOF' > bbr.sh
 #!/bin/bash
 
-# 限制脚本仅支持基于 Debian/Ubuntu 的系统（即支持 apt-get 的系统）
+# 限制脚本仅支持基于 Debian/Ubuntu 的系统
 if ! command -v apt-get &> /dev/null; then
     echo -e "\033[31m此脚本仅支持基于 Debian/Ubuntu 的系统，请在支持 apt-get 的系统上运行！\033[0m"
     exit 1
@@ -56,7 +57,7 @@ get_installed_version() {
     dpkg -l | grep "linux-image" | grep "joeyblog" | awk '{print $2}' | sed 's/linux-image-//' | head -n 1
 }
 
-# 函数：智能更新引导加载程序 (GRUB, U-Boot 等)
+# 函数：智能更新引导加载程序
 update_bootloader() {
     echo -e "\033[36m正在更新引导加载程序...\033[0m"
     if command -v update-grub &> /dev/null; then
@@ -110,8 +111,8 @@ install_latest_version() {
     echo -e "\033[36m正在从 GitHub 获取最新版本信息...\033[0m"
     BASE_URL="https://api.github.com/repos/byJoey/Actions-bbr-v3/releases"
     RELEASE_DATA=$(curl -sL "$BASE_URL")
-    if [[ $? -ne 0 ]]; then
-        echo -e "\033[31m从 GitHub 获取版本信息失败。请检查网络连接或 GitHub API 状态。\033[0m"
+    if [[ -z "$RELEASE_DATA" ]]; then
+        echo -e "\033[31m从 GitHub 获取版本信息失败。请检查网络连接或 API 状态。\033[0m"
         return 1
     fi
 
@@ -130,10 +131,15 @@ install_latest_version() {
     INSTALLED_VERSION=$(get_installed_version)
     echo -e "\033[36m当前已安装版本：\033[0m\033[1;32m${INSTALLED_VERSION:-"未安装"}\033[0m"
 
-    if [[ "$LATEST_TAG_NAME" == "$INSTALLED_VERSION" ]]; then
-echo -e "\033[1;32m(o´▽'o) 您已安装最新版本，无需更新！\033[0m"
+    # --- BUG 修复：更智能的版本比对 ---
+    CORE_LATEST_VERSION="${LATEST_TAG_NAME#x86_64-}"
+    CORE_LATEST_VERSION="${CORE_LATEST_VERSION#arm64-}"
+
+    if [[ -n "$INSTALLED_VERSION" && "$INSTALLED_VERSION" == "$CORE_LATEST_VERSION"* ]]; then
+        echo -e "\033[1;32m(o´▽`o) 您已安装最新版本，无需更新！\033[0m"
         return 0
     fi
+    # --- 修复结束 ---
 
     echo -e "\033[33m发现新版本或未安装内核，准备下载...\033[0m"
     ASSET_URLS=$(echo "$RELEASE_DATA" | jq -r --arg tag "$LATEST_TAG_NAME" '.[] | select(.tag_name == $tag) | .assets[].browser_download_url')
@@ -152,6 +158,10 @@ echo -e "\033[1;32m(o´▽'o) 您已安装最新版本，无需更新！\033[0m"
 install_specific_version() {
     BASE_URL="https://api.github.com/repos/byJoey/Actions-bbr-v3/releases"
     RELEASE_DATA=$(curl -s "$BASE_URL")
+    if [[ -z "$RELEASE_DATA" ]]; then
+        echo -e "\033[31m从 GitHub 获取版本信息失败。请检查网络连接或 API 状态。\033[0m"
+        return 1
+    fi
 
     local ARCH_FILTER=""
     [[ "$ARCH" == "aarch64" ]] && ARCH_FILTER="arm64"
@@ -279,10 +289,7 @@ case "$ACTION" in
         ask_to_save
         ;;
     7)
-        echo -e "\033[1;32mヽ(・∀・)ノ 您选择了卸载 BBR 内核！\033[0m"
-        PACKAGES_TO_REMOVE=$(dpkg -l | grep "joeyblog" | awk '{print $2}' | tr '\n' ' ')
-        if [[ -n "$PACKAGES_TO_REMOVE" ]]; then
-            echo -e "\033[36m将要卸载以下内核包: \033[33m$PACKAGES_TO_REMOVE\033[0m"
+        echo -e "\03-e "\033[36m将要卸载以下内核包: \033[33m$PACKAGES_TO_REMOVE\033[0m"
             sudo apt-get remove --purge $PACKAGES_TO_REMOVE -y
             update_bootloader
             echo -e "\033[1;32m内核包已卸载。请记得重启系统。\033[0m"
@@ -294,3 +301,6 @@ case "$ACTION" in
         echo -e "\033[31m(￣▽￣)ゞ 无效的选项，请输入 1-7 之间的数字哦~\033[0m"
         ;;
 esac
+EOF
+
+chmod +x bbr.sh && sudo ./bbr.sh
