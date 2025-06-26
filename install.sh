@@ -130,15 +130,14 @@ install_latest_version() {
     INSTALLED_VERSION=$(get_installed_version)
     echo -e "\033[36m当前已安装版本：\033[0m\033[1;32m${INSTALLED_VERSION:-"未安装"}\033[0m"
 
-    # --- BUG 修复：更智能的版本比对 ---
     CORE_LATEST_VERSION="${LATEST_TAG_NAME#x86_64-}"
     CORE_LATEST_VERSION="${CORE_LATEST_VERSION#arm64-}"
 
     if [[ -n "$INSTALLED_VERSION" && "$INSTALLED_VERSION" == "$CORE_LATEST_VERSION"* ]]; then
-echo -e "\033[1;32m(o´▽'o) 您已安装最新版本，无需更新！\033[0m"
+        # 修复了此处的颜文字，将反引号 ` 替换为单引号 '
+        echo -e "\033[1;32m(o'▽'o) 您已安装最新版本，无需更新！\033[0m"
         return 0
     fi
-    # --- 修复结束 ---
 
     echo -e "\033[33m发现新版本或未安装内核，准备下载...\033[0m"
     ASSET_URLS=$(echo "$RELEASE_DATA" | jq -r --arg tag "$LATEST_TAG_NAME" '.[] | select(.tag_name == $tag) | .assets[].browser_download_url')
@@ -288,7 +287,10 @@ case "$ACTION" in
         ask_to_save
         ;;
     7)
-        echo -e "\03-e "\033[36m将要卸载以下内核包: \033[33m$PACKAGES_TO_REMOVE\033[0m"
+        echo -e "\033[1;32mヽ(・∀・)ノ 您选择了卸载 BBR 内核！\033[0m"
+        PACKAGES_TO_REMOVE=$(dpkg -l | grep "joeyblog" | awk '{print $2}' | tr '\n' ' ')
+        if [[ -n "$PACKAGES_TO_REMOVE" ]]; then
+            echo -e "\033[36m将要卸载以下内核包: \033[33m$PACKAGES_TO_REMOVE\033[0m"
             sudo apt-get remove --purge $PACKAGES_TO_REMOVE -y
             update_bootloader
             echo -e "\033[1;32m内核包已卸载。请记得重启系统。\033[0m"
@@ -300,4 +302,3 @@ case "$ACTION" in
         echo -e "\033[31m(￣▽￣)ゞ 无效的选项，请输入 1-7 之间的数字哦~\033[0m"
         ;;
 esac
-
