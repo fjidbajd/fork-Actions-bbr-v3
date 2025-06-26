@@ -1,4 +1,3 @@
-cat << 'EOF' > bbr.sh
 #!/bin/bash
 
 # 限制脚本仅支持基于 Debian/Ubuntu 的系统
@@ -136,7 +135,7 @@ install_latest_version() {
     CORE_LATEST_VERSION="${CORE_LATEST_VERSION#arm64-}"
 
     if [[ -n "$INSTALLED_VERSION" && "$INSTALLED_VERSION" == "$CORE_LATEST_VERSION"* ]]; then
-        echo -e "\033[1;32m(o´▽`o) 您已安装最新版本，无需更新！\033[0m"
+echo -e "\033[1;32m(o´▽`o) 您已安装最新版本，无需更新！\033[0m"
         return 0
     fi
     # --- 修复结束 ---
@@ -301,6 +300,4 @@ case "$ACTION" in
         echo -e "\033[31m(￣▽￣)ゞ 无效的选项，请输入 1-7 之间的数字哦~\033[0m"
         ;;
 esac
-EOF
 
-chmod +x bbr.sh && sudo ./bbr.sh
