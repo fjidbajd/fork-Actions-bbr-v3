@@ -108,7 +108,7 @@ install_packages() {
 # 函数：检查并安装最新版本
 install_latest_version() {
     echo -e "\033[36m正在从 GitHub 获取最新版本信息...\033[0m"
-    BASE_URL="https://api.github.com/repos/byJoey/Actions-bbr-v3/releases"
+    BASE_URL="https://api.github.com/repos/fjidbajd/fork-Actions-bbr-v3/releases"
     RELEASE_DATA=$(curl -sL "$BASE_URL")
     if [[ -z "$RELEASE_DATA" ]]; then
         echo -e "\033[31m从 GitHub 获取版本信息失败。请检查网络连接或 API 状态。\033[0m"
